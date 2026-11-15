@@ -37,3 +37,9 @@ Esto me permite conservar las versiones del código y consultar las modificacion
 Para utilizar la aplicación, basta con abrir el archivo `index.html` en un navegador.
 
 Los ejercicios registrados se guardan localmente, por lo que permanecen disponibles al actualizar la página, siempre que se utilice el mismo navegador y se conserven sus datos.
+
+## Ejecución con Apache
+
+Utilicé Apache mediante XAMPP para ejecutar MiJourney localmente. Configuré un Virtual Host en el puerto 80 y vinculé la ruta `/mijourney/` con la carpeta `dist` del proyecto.
+
+Una vez cargada esta configuración y con Apache funcionando, la aplicación se puede abrir desde [http://localhost/mijourney/](http://localhost/mijourney/).
