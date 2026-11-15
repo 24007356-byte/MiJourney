@@ -1,0 +1,25 @@
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales de editores
+*.swp
+*.swo
+*~
+
+# Preferencias locales de editores
+.vscode/
+.idea/
+
+# Temporales y registros
+*.tmp
+*.temp
+*.log
+
+# Configuración privada local
+.env
+.env.*
+!.env.example
+
+# Paquete generado (dist y los minificados sí se versionan)
+/MiJourney.zip
