@@ -1,45 +1,59 @@
 'use strict';
 
-const STORAGE_KEY = 'mijourney.exercises.v1';
+const API_URL = '/api/ejercicios';
 const form = document.querySelector('#exercise-form');
 const list = document.querySelector('#exercise-list');
 const emptyState = document.querySelector('#empty-state');
 const count = document.querySelector('#record-count');
 const status = document.querySelector('#status');
 const numberFormat = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 });
+const submitButton = form.querySelector('button[type="submit"]');
+let exercises = [];
 
 function validExercise(item) {
-  return item && typeof item.id === 'string' && typeof item.name === 'string' &&
+  return item && typeof item.name === 'string' &&
     item.name.trim().length > 0 && item.name.length <= 80 &&
     Number.isInteger(item.sets) && item.sets >= 1 && item.sets <= 1000 &&
     Number.isInteger(item.reps) && item.reps >= 1 && item.reps <= 10000 &&
     Number.isFinite(item.weight) && item.weight >= 0 && item.weight <= 10000;
 }
 
-function loadExercises() {
+async function request(url, options = {}) {
+  let response;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === null) return [];
-    const parsed = JSON.parse(saved);
-    if (!Array.isArray(parsed) || !parsed.every(validExercise)) throw new Error('Datos inválidos');
-    return parsed;
+    response = await fetch(url, { ...options, cache: 'no-store' });
   } catch {
-    status.textContent = 'No se pudieron recuperar los registros. Comprueba que el almacenamiento local esté disponible.';
-    return [];
+    throw new Error('No se pudo conectar con el servidor. Comprueba la conexión e inténtalo de nuevo.');
   }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'No se pudo completar la operación. Inténtalo de nuevo.');
+  }
+  if (response.status === 204) return null;
+  return response.json();
 }
 
-let exercises = loadExercises();
+function fromDatabase(row) {
+  const exercise = { id: row.id, name: row.nombre, sets: row.series, reps: row.repeticiones, weight: row.peso };
+  if (!Number.isInteger(exercise.id) || exercise.id < 1 || !validExercise(exercise)) {
+    throw new Error('El servidor devolvió un registro no válido.');
+  }
+  return exercise;
+}
 
-function saveExercises(next) {
+async function loadExercises() {
+  submitButton.disabled = true;
+  emptyState.hidden = true;
+  status.textContent = 'Cargando ejercicios…';
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    exercises = next;
+    const rows = await request(API_URL);
+    if (!Array.isArray(rows)) throw new Error('El servidor devolvió una respuesta no válida.');
+    exercises = rows.map(fromDatabase);
     renderExercises();
-    return true;
-  } catch {
-    status.textContent = 'No se pudo guardar el cambio. Revisa el espacio o los permisos de almacenamiento del navegador e inténtalo de nuevo.';
-    return false;
+    submitButton.disabled = false;
+    status.textContent = '';
+  } catch (error) {
+    status.textContent = `${error.message} Actualiza la página para volver a cargar los registros.`;
   }
 }
 
@@ -60,12 +74,20 @@ function renderExercises() {
     remove.className = 'delete';
     remove.textContent = 'Eliminar';
     remove.setAttribute('aria-label', `Eliminar ${exercise.name}`);
-    remove.addEventListener('click', () => {
-      const index = exercises.indexOf(exercise);
-      if (saveExercises(exercises.filter((item) => item !== exercise))) {
+    remove.addEventListener('click', async () => {
+      if (remove.disabled) return;
+      remove.disabled = true;
+      try {
+        await request(`${API_URL}/${exercise.id}`, { method: 'DELETE' });
+        const index = exercises.findIndex((item) => item.id === exercise.id);
+        exercises = exercises.filter((item) => item.id !== exercise.id);
+        renderExercises();
         status.textContent = `Se eliminó ${exercise.name}.`;
         const buttons = list.querySelectorAll('.delete');
         (buttons[Math.min(index, buttons.length - 1)] || form.elements.name).focus();
+      } catch (error) {
+        status.textContent = error.message;
+        remove.disabled = false;
       }
     });
     heading.append(title, remove);
@@ -85,25 +107,37 @@ function renderExercises() {
   }
 }
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (submitButton.disabled) return;
   const nameInput = form.elements.name;
   nameInput.setCustomValidity(nameInput.value.trim() ? '' : 'Escribe el nombre del ejercicio.');
   if (!form.reportValidity()) return;
   const exercise = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     name: nameInput.value.trim(),
     sets: Number(form.elements.sets.value),
     reps: Number(form.elements.reps.value),
     weight: Number(form.elements.weight.value),
   };
   if (!validExercise(exercise)) return;
-  if (saveExercises([exercise, ...exercises])) {
+  submitButton.disabled = true;
+  try {
+    const row = await request(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: exercise.name, series: exercise.sets, repeticiones: exercise.reps, peso: exercise.weight }),
+    });
+    exercises = [fromDatabase(row), ...exercises];
+    renderExercises();
     form.reset();
     nameInput.focus();
     status.textContent = `${exercise.name} se registró correctamente.`;
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    submitButton.disabled = false;
   }
 });
 
 form.elements.name.addEventListener('input', () => form.elements.name.setCustomValidity(''));
-renderExercises();
+loadExercises();

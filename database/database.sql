@@ -1,0 +1,11 @@
+CREATE DATABASE IF NOT EXISTS mijourney;
+
+USE mijourney;
+
+CREATE TABLE IF NOT EXISTS ejercicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(80) NOT NULL,
+    series INT NOT NULL,
+    repeticiones INT NOT NULL,
+    peso DECIMAL(8,2) NOT NULL DEFAULT 0
+);

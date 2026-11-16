@@ -1,0 +1,27 @@
+{
+  "name": "mijourney",
+  "version": "1.0.0",
+  "description": "Registro de entrenamientos con HTML, CSS, JavaScript y servidor Express.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check-db": "node server.js --check-db"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/24007356-byte/MiJourney.git"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/24007356-byte/MiJourney/issues"
+  },
+  "homepage": "https://github.com/24007356-byte/MiJourney#readme",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  }
+}

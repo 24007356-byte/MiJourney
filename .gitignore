@@ -21,5 +21,8 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Dependencias de Node.js
+node_modules/
+
 # Paquete generado (dist y los minificados sí se versionan)
 /MiJourney.zip
